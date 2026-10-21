@@ -309,3 +309,26 @@ unused_var = 'monty'
     )
     check(v.unused_imports, [])
     check(v.unused_vars, ["unused_var"])
+
+
+def test_whitelist_loading(v):
+    v.scan(
+        """\
+import collections
+collections.OrderedDict
+"""
+    )
+    check(v.unused_imports, [])
+
+
+def test_whitelist_loading_with_scavenge(v, tmp_path):
+    module = tmp_path / "test.py"
+    module.write_text(
+        """\
+import argparse
+argparse.ArgumentParser
+"""
+    )
+    
+    v.scavenge([module])
+    check(v.unused_imports, [])

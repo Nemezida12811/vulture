@@ -33,3 +33,16 @@ def test_invalid_cmdline_args():
         call_vulture(["vulture/", "--invalid-argument"])
         == ExitCode.InvalidCmdlineArguments
     )
+
+
+def test_value_error_in_scan(v):
+    v.scan("\x00")
+    assert int(v.report()) == ExitCode.InvalidInput
+
+
+def test_value_error_with_filename(v, tmp_path):
+    module = tmp_path / "test.py"
+    module.write_bytes(b"\x00\x00\x00 invalid")
+    
+    v.scavenge([module])
+    assert int(v.report()) == ExitCode.InvalidInput

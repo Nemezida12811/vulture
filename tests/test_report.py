@@ -1,4 +1,5 @@
 import pytest
+from vulture.core import Vulture
 
 from . import v
 
@@ -74,3 +75,25 @@ _.myprop  # unused property ({filename}:14)
 myfunc  # unused function ({filename}:18)
 """
     check_report(mock_code, expected, make_whitelist=True)
+
+
+def test_log_unicode_encode_error():
+    class FailingStream:
+        def __init__(self):
+            self.failed = False
+            self.written = []
+
+        def write(self, value):
+            if isinstance(value, str) and not self.failed:
+                self.failed = True
+                raise UnicodeEncodeError(
+                    "ascii", value, 0, 1, "encoding error"
+                )
+            self.written.append(value)
+
+    v = Vulture()
+    stream = FailingStream()
+
+    v._log("日本人", file=stream, force=True)
+
+    assert any(repr("日本人".encode()) in value for value in stream.written)

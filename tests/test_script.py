@@ -201,3 +201,31 @@ def test_main_ignore_files(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as excinfo:
         main()
     assert excinfo.value.code == ExitCode.NoDeadCode
+
+
+def test_main_invalid_config(monkeypatch):
+    import pytest
+    import vulture.core as core
+
+    def raise_input_error():
+        raise core.InputError("Invalid configuration")
+
+    monkeypatch.setattr(core, "make_config", raise_input_error)
+
+    with pytest.raises(SystemExit) as exc_info:
+        core.main()
+
+    assert exc_info.value.code == core.ExitCode.InvalidCmdlineArguments
+
+
+def test_main_py_execution(tmp_path):
+    module = tmp_path / "module.py"
+    module.write_text("def used():\n    pass\nused()\n")
+
+    result = subprocess.run(
+        [sys.executable, "-m", "vulture", str(module)],
+        cwd=REPO,
+        capture_output=True,
+    )
+    
+    assert result.returncode == ExitCode.NoDeadCode

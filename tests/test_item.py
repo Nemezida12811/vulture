@@ -1,4 +1,5 @@
 from . import v
+from vulture.core import Vulture
 
 assert v  # Silence pyflakes
 
@@ -99,3 +100,37 @@ def test_item_variable(v):
     assert var.name == "v"
     assert var.first_lineno == 1
     assert var.last_lineno == 1
+
+
+def test_item_report_with_size(v):
+    v.scan("class Foo:\n    pass\n", filename="foo.py")
+
+    item = v.unused_classes[0]
+
+    assert item.get_report(add_size=True) == (
+        "foo.py:1: unused class 'Foo' (60% confidence, 2 lines)"
+    )
+
+
+def test_item_report_with_single_line_size(v):
+    v.scan("value = 1", filename="foo.py")
+
+    item = v.unused_vars[0]
+
+    assert item.get_report(add_size=True) == (
+        "foo.py:1: unused variable 'value' (60% confidence, 1 line)"
+    )
+
+
+def test_item_equality_and_hash():
+    first_vulture = Vulture()
+    second_vulture = Vulture()
+
+    first_vulture.scan("value = 1", filename="same.py")
+    second_vulture.scan("value = 1", filename="same.py")
+
+    first_item = first_vulture.unused_vars[0]
+    second_item = second_vulture.unused_vars[0]
+
+    assert first_item == second_item
+    assert hash(first_item) == hash(second_item)

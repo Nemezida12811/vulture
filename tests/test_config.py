@@ -299,3 +299,20 @@ def test_ignore_files_from_toml():
         "generated.py",
         "*/migrations/*",
     ]
+
+
+def test_tomllib_module_available():
+    import vulture.config
+
+    assert hasattr(vulture.config, 'tomllib')
+
+    toml_data = get_toml_bytes(
+        dedent(
+            """\
+        [tool.vulture]
+        paths = ["test"]
+        """
+        )
+    )
+    result = vulture.config._parse_toml(toml_data)
+    assert result == {"paths": ["test"]}

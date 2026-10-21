@@ -1,6 +1,7 @@
 import ast
 import os
 import pathlib
+import tempfile
 
 import pytest
 
@@ -155,3 +156,40 @@ def test_get_decorator_name_multiple_callables(decorated):
         code,
         ["@foo", "@bar.prop", "@", "@", "@k.hello", "@"],
     )
+
+
+def test_get_modules_pyc_file():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pyc_file = pathlib.Path(tmpdir) / "test.pyc"
+        pyc_file.touch()
+        
+        with pytest.raises(SystemExit) as exc_info:
+            utils.get_modules([pathlib.Path(tmpdir) / "test.pyc"])
+        
+        assert "Error: *.pyc files are not supported" in str(exc_info.value)
+
+
+def test_get_modules_nonexistent_path():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        nonexistent = pathlib.Path(tmpdir) / "does_not_exist.py"
+        
+        with pytest.raises(SystemExit) as exc_info:
+            utils.get_modules([nonexistent])
+        
+        assert "Error:" in str(exc_info.value)
+        assert "could not be found" in str(exc_info.value)
+
+
+def test_get_modules_directory():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        dir_path = pathlib.Path(tmpdir)
+        (dir_path / "test1.py").touch()
+        (dir_path / "test2.py").touch()
+        (dir_path / "subdir").mkdir()
+        (dir_path / "subdir" / "test3.py").touch()
+        (dir_path / "not_py.txt").touch()
+        
+        modules = utils.get_modules([dir_path])
+        
+        assert len(modules) == 3
+        assert all(m.suffix == ".py" for m in modules)
